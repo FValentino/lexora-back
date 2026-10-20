@@ -1,0 +1,76 @@
+# ==========================================
+Dependencias
+# ==========================================
+node_modules/
+jspm_packages/
+web_modules/
+
+# ==========================================
+#Compilación de TypeScript (Build)
+# ==========================================
+# Si compilas en otra carpeta como 'build', cambiala acá
+dist/
+build/
+out/
+tsconfig.tsbuildinfo
+
+# ==========================================
+#Secretos y Variables de Entorno
+# ==========================================
+.env
+.env.local
+.env.test.local
+*.env
+*.pem
+
+# ==========================================
+# Logs y Datos de Ejecución
+# ==========================================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Archivos de procesos (pm2, nodemon, etc.)
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ==========================================
+# Pruebas y Cobertura (Jest, Mocha, etc.)
+# ==========================================
+coverage/
+.nyc_output/
+.jest/
+
+# ==========================================
+# Editores y Herramientas (IDE)
+# ==========================================
+# Visual Studio Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+
+# WebStorm / IntelliJ
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ==========================================
+# Archivos del Sistema Operativo
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
