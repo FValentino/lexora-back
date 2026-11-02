@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { loginSchema } from "../schemas/auth.schema.js";
+import { loginSchema, changePasswordSchema } from "../schemas/auth.schema.js";
 
 
 export type LoginDTO = z.infer<typeof loginSchema>;
 
-
+export type ChangePasswordDTO = z.infer<typeof changePasswordSchema>;

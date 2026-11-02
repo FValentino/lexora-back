@@ -1,42 +1,33 @@
 import bcrypt from "bcrypt";
 import { pool } from "../config/database.js";
-import { randomUUID } from "node:crypto";
-async function seedUser() {
-  try {
-    const firstName = "Juan";
-    const lastName = "Pérez";
-    const email = "juan@lexora.test";
-    const password = "Juan123!";
-    const registration = "TOMO-123-FOLIO-456";
-    const id = randomUUID();
-    // Verificar si el usuario ya existe
-    const existingUser = await pool.query(
-      "SELECT id FROM public.users WHERE email = $1",
-      [email]
-    );
+async function createAdmin() {
+  const email = "admin@lexora.com";
+  const password = "LexoraAdmin2026!";
+  const fullName = "Administrador Lexora";
 
-    if (existingUser.rowCount && existingUser.rowCount > 0) {
-      console.log("El usuario de prueba ya existe");
-      return;
-    }
+  const passwordHash = await bcrypt.hash(password, 12);
 
-    // Generar hash de la contraseña
-    const passwordHash = await bcrypt.hash(password, 10);
+  const result = await pool.query(
+    `INSERT INTO public.users (
+      email,
+      password_hash,
+      full_name,
+      is_platform_admin,
+      is_active
+    )
+    VALUES ($1, $2, $3, TRUE, TRUE)
+    ON CONFLICT (email) DO NOTHING
+    RETURNING id, email, full_name, is_platform_admin`,
+    [email, passwordHash, fullName]
+  );
 
-    // Insertar usuario
-    await pool.query(
-    `INSERT INTO public.users
-        (id, first_name, last_name, email, password_hash, bar_association_registration)
-    VALUES ($1, $2, $3, $4, $5, $6)`,
-    [id, firstName, lastName, email, passwordHash, registration]
-    );
-
-    console.log("Usuario de prueba creado correctamente");
-  } catch (error) {
-    console.error("Error creando usuario:", error);
-  } finally {
-    await pool.end();
+  if (result.rowCount === 0) {
+    throw new Error("Ya existe un usuario con ese email");
   }
+
+  console.log("Administrador creado:", result.rows[0]);
 }
 
-seedUser();
+createAdmin()
+  .catch(console.error)
+  .finally(() => pool.end());
