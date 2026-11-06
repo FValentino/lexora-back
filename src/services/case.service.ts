@@ -1,17 +1,13 @@
-import { pool } from "../config/database.js";
+import { AppDataSource } from "../config/data-source.js";
+import { CaseMember } from "../entities/CaseMember.js";
 
+const caseMemberRepository = AppDataSource.getRepository(CaseMember);
 
-export async function isCaseMember(
-    caseId: string,
-    userId: string
-): Promise<boolean> {
-    const result = await pool.query(
-        `SELECT 1
-         FROM public.case_members
-         WHERE case_id = $1
-            AND user_id = $2`,
-        [caseId, userId]
-    );
+export async function isCaseMember(caseId: string, userId: string): Promise<boolean> {
+    const membership = await caseMemberRepository.findOneBy({
+        caseId,
+        userId
+    });
 
-    return (result.rowCount ?? 0) > 0;
+    return membership !== null;
 }

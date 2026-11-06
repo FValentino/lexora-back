@@ -1,41 +1,38 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { pool } from "../config/database.js";
+import { AppDataSource } from "../config/data-source.js";
+import { User } from "../entities/User.js";
+import { env } from "../config/env.js";
 import type { ChangePasswordDTO, LoginDTO } from "../dtos/auth.dto.js";
 
+const userRepository = AppDataSource.getRepository(User);
 
-export async function loginUser({ email, password}: LoginDTO) {
-    const result = await pool.query(
-        `SELECT id, full_name, email, password_hash, is_platform_admin, is_active
-         FROM public.users
-         WHERE LOWER(email) = LOWER($1)`
-         , [email]
-    )
+export async function loginUser({ email, password }: LoginDTO) {
+    const user = await userRepository
+        .createQueryBuilder("user")
+        .addSelect("user.passwordHash")
+        .where("LOWER(user.email) = LOWER(:email)", { email })
+        .getOne();
 
-    const user = result.rows[0];
-
-    if (!user) {
-        throw new Error('Credenciales inválidas');
+    if (!user || !user.isActive) {
+        throw new Error("Credenciales inválidas");
     }
 
-    const passwordMatches = await bcrypt.compare(
-        password,
-        user.password_hash
-    );
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordMatches) {
-        throw new Error('Credenciales inválidas');
+        throw new Error("Credenciales inválidas");
     }
 
     const token = jwt.sign(
         {
             sub: user.id,
             email: user.email,
-            isPlatformAdmin: user.is_platform_admin
+            isPlatformAdmin: user.isPlatformAdmin
         },
-        process.env.JWT_SECRET!,
+        env.JWT_SECRET,
         {
-            expiresIn: "1d",
+            expiresIn: "1d"
         }
     );
 
@@ -43,50 +40,43 @@ export async function loginUser({ email, password}: LoginDTO) {
         token,
         user: {
             id: user.id,
-            full_name: user.full_name,
+            full_name: user.fullName,
             email: user.email,
-            is_platform_admin: user.is_platform_admin
-        },
+            is_platform_admin: user.isPlatformAdmin
+        }
     };
 }
 
 export async function getCurrentUser(userId: string) {
-    const result = await pool.query(
-        `SELECT id, full_name, email, is_platform_admin
-         FROM public.users
-         WHERE id = $1`,
-         [userId]
-    );
-
-    const user = result.rows[0];
+    const user = await userRepository.findOneBy({ id: userId });
 
     if (!user) {
         throw new Error("Usuario no encontrado");
     }
 
-    return user;
+    return {
+        id: user.id,
+        full_name: user.fullName,
+        email: user.email,
+        is_platform_admin: user.isPlatformAdmin
+    };
 }
 
 export async function changePassword(userId: string, data: ChangePasswordDTO) {
-    const { currentPassword, newPassword} = data;
+    const { currentPassword, newPassword } = data;
 
-    const result = await pool.query(
-        `SELECT password_hash
-         FROM public.users
-         WHERE id = $1 AND is_active = TRUE`,
-         [userId]
-    );
-
-    const user = result.rows[0];
+    const user = await userRepository
+        .createQueryBuilder("user")
+        .addSelect("user.passwordHash")
+        .where("user.id = :userId", { userId })
+        .andWhere("user.isActive = :active", { active: true })
+        .getOne();
 
     if (!user) {
         throw new Error("Usuario no encontrado o inactivo");
     }
 
-    const passwordMatches = await bcrypt.compare(
-        currentPassword,
-        user.password_hash
-    );
+    const passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash);
 
     if (!passwordMatches) {
         throw new Error("La contraseña actual es incorrecta");
@@ -94,12 +84,11 @@ export async function changePassword(userId: string, data: ChangePasswordDTO) {
 
     const newPasswordHash = await bcrypt.hash(newPassword, 12);
 
-    await pool.query(
-        `UPDATE public.users
-         SET password_hash = $1
-         WHERE id = $2`,
-         [newPasswordHash, userId]
-    );
+    await userRepository.update(userId, {
+        passwordHash: newPasswordHash
+    });
 
-    return { message: "Contraseña actualizada correctamente"};
+    return {
+        message: "Contraseña actualizada correctamente"
+    };
 }
