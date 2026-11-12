@@ -55,8 +55,6 @@ interface UpdateModelData {
 
 const modelRepository = AppDataSource.getRepository(Model);
 
-
-
 export async function getModels(params: GetModelsParams) {
     const { userId, page, limit, q, categoryId, jurisdictionId, reviewStatus, visibility, sort } = params;
 
@@ -110,6 +108,7 @@ export async function getModels(params: GetModelsParams) {
 
     if (query) {
         values.push(query);
+
         conditions.push(`
             to_tsvector(
                 'spanish',
@@ -188,8 +187,6 @@ export async function getModels(params: GetModelsParams) {
     };
 }
 
-
-
 export async function getModelById(modelId: string, userId: string) {
     const model = await modelRepository
         .createQueryBuilder("model")
@@ -206,8 +203,6 @@ export async function getModelById(modelId: string, userId: string) {
 
     return model;
 }
-
-
 
 export async function createModel(data: CreateModelData, userId: string) {
     try {
@@ -230,8 +225,6 @@ export async function createModel(data: CreateModelData, userId: string) {
         throw error;
     }
 }
-
-
 
 export async function updateModel(modelId: string, data: UpdateModelData, userId: string, isPlatformAdmin: boolean) {
     const model = await modelRepository.findOneBy({ id: modelId });
@@ -260,8 +253,6 @@ export async function updateModel(modelId: string, data: UpdateModelData, userId
     }
 }
 
-
-
 export async function updateModelVisibility(modelId: string, visibility: Visibility, userId: string, isPlatformAdmin: boolean) {
     const model = await modelRepository.findOneBy({ id: modelId });
 
@@ -277,7 +268,6 @@ export async function updateModelVisibility(modelId: string, visibility: Visibil
 
     return await modelRepository.save(model);
 }
-
 
 export async function reviewModel(modelId: string, reviewStatus: ReviewStatus, userId: string, isPlatformAdmin: boolean) {
     const model = await modelRepository.findOneBy({ id: modelId });
