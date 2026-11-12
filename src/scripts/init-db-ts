@@ -1,0 +1,29 @@
+import { pool } from "../config/database.js";
+
+async function createTables() {
+    try {
+        const query = `
+            CREATE TABLE IF NOT EXISTS public.cases (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                owner_id INTEGER REFERENCES public.users(id) ON DELETE CASCADE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    );
+
+    CREATE TABLE IF NOT EXISTS public.cases.collaborators (
+        case_id INTEGER REFERENCES public.cases(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES public.users(id) ON DELETE CASCADE,
+        PRIMARY KEY (case_id, user_id)
+    );
+`;
+
+console.log("Creando tablas...  ");
+    await pool.query(query);
+    console.log("Tablas creadas exitosamente.");
+}catch (error) {
+    console.error("Error al crear las tablas:", error);
+}finally {
+    await pool.end();
+}
+};
