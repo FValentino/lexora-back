@@ -42,13 +42,13 @@ export async function getModelByIdController(req: Request, res: Response) {
     try {
         const { modelId } = req.params;
         const userId = res.locals.userId;
+        const isPlatformAdmin = res.locals.isPlatformAdmin;
 
         if (typeof modelId !== "string") {
-
             return res.status(400).json({ message: "ID de modelo inválido" });
-
         }
-        const model = await getModelById(modelId, userId);
+
+        const model = await getModelById(modelId, userId, isPlatformAdmin);
 
         return res.status(200).json(model);
     } catch (error: any) {
@@ -60,6 +60,7 @@ export async function getModelByIdController(req: Request, res: Response) {
         return res.status(500).json({ message: "Error al obtener el modelo" });
     }
 }
+
 
 
 export async function createModelController(req: Request, res: Response) {

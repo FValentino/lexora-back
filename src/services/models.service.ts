@@ -154,6 +154,20 @@ export async function getModels(params: GetModelsParams) {
     const countResult = await AppDataSource.query(countQuery, values);
     const total = countResult[0].total;
 
+    if (query && total === 0) {
+        await AppDataSource.query(
+            `
+            INSERT INTO public.search_logs (
+                query,
+                results_count,
+                user_id
+            )
+            VALUES ($1, $2, $3)
+            `,
+            [query, total, userId]
+        );
+    }
+
     const listValues = [...values, limit, offset];
 
     const listQuery = `
@@ -187,22 +201,53 @@ export async function getModels(params: GetModelsParams) {
     };
 }
 
-export async function getModelById(modelId: string, userId: string) {
+export async function getModelById(modelId: string, userId: string, isPlatformAdmin: boolean) {
     const model = await modelRepository
         .createQueryBuilder("model")
         .where("model.id = :modelId", { modelId })
-        .andWhere("(model.visibility = :visibility OR model.createdBy = :userId)", {
-            visibility: "institution",
-            userId
-        })
+        .andWhere(
+            "(model.visibility = :visibility OR model.createdBy = :userId OR :isPlatformAdmin = true)",
+            {
+                visibility: "institution",
+                userId,
+                isPlatformAdmin
+            }
+        )
         .getOne();
 
     if (!model) {
         throw new Error("MODEL_NOT_FOUND");
     }
 
-    return model;
+    const sources = await AppDataSource.query(
+        `
+        SELECT
+            s.id,
+            s.type,
+            s.title,
+            s.issuer,
+            s.url,
+            s.jurisdiction_id AS "jurisdictionId",
+            s.published_at AS "publishedAt",
+            s.reviewed_at AS "reviewedAt",
+            s.notes,
+            s.visibility,
+            s.created_by AS "createdBy",
+            s.created_at AS "createdAt"
+        FROM public.model_sources ms
+        INNER JOIN public.sources s ON s.id = ms.source_id
+        WHERE ms.model_id = $1
+        ORDER BY ms.created_at DESC
+        `,
+        [modelId]
+    );
+
+    return {
+        ...model,
+        sources
+    };
 }
+
 
 export async function createModel(data: CreateModelData, userId: string) {
     try {
